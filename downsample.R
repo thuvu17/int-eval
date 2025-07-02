@@ -7,6 +7,8 @@ shared_celltypes <- intersect(valid_3p, valid_5p)
 pbmc_3p <- subset(pbmc_3p, subset = celltype %in% shared_celltypes)
 pbmc_5p <- subset(pbmc_5p, subset = celltype %in% shared_celltypes)
 
+remove(shared_celltypes)
+
 # Then, randomly select only 200 cells in each cell type
 downsample <- function(seurat_obj, group_var = "celltype", target_n = 200) {
   celltypes <- table(seurat_obj[[group_var]][, 1])
@@ -21,4 +23,4 @@ downsample <- function(seurat_obj, group_var = "celltype", target_n = 200) {
 }
 
 pbmc_3p.balanced <- downsample(pbmc_3p)
-pbmc_5p_balanced <- downsample(pbmc_5p)
+pbmc_5p.balanced <- downsample(pbmc_5p)
