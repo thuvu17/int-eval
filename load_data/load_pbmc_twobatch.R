@@ -1,18 +1,16 @@
+library(zellkonverter)
 library(Seurat)
+library(SingleCellExperiment)
 
 
-# Load data
-pbmc_3p <- Read10X("data/pbmc8k_filtered_gene_3p")
-pbmc_5p <- Read10X_h5("data/pbmc8k_filtered_gene_5p.h5")
+# Set file path
+file_path.1 <- "data/pbmc_2_batch_base_balanced/tran_exp5_pbmc_batch1_balanced.h5ad"
+file_path.2 <- "data/pbmc_2_batch_base_balanced/tran_exp5_pbmc_batch2_balanced.h5ad"
+
+# Read h5ad files
+pbmc_3p.balanced <- readH5AD(file_path.1)
+pbmc_5p.balanced <- readH5AD(file_path.2)
 
 # Create Seurat Object
-pbmc_3p <- CreateSeuratObject(counts = pbmc_3p, project = "pbmc_3p", min.cells = 3, min.features = 200)
-pbmc_5p <- CreateSeuratObject(counts = pbmc_5p[["Gene Expression"]], project = "pbmc_5p", min.cells = 3, min.features = 200)
-
-# Add metadata
-pbmc_3p$batch <- "3p"
-pbmc_5p$batch <- "5p"
-
-# Add batch name to barcode
-pbmc_3p <- RenameCells(pbmc_3p, new.names = paste0("data_3p-", colnames(pbmc_3p)))
-pbmc_5p <- RenameCells(pbmc_5p, new.names = paste0("data_5p-", colnames(pbmc_5p)))
+pbmc_3p.balanced <- as.Seurat(pbmc_3p.balanced, counts = "X", data = "X")
+pbmc_5p.balanced <- as.Seurat(pbmc_5p.balanced, counts = "X", data = "X")

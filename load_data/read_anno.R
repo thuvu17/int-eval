@@ -1,6 +1,7 @@
 # Cell type annotation was provided for 3' PBMC
-# Read in metadata: batch, cell type = annotation, barcode
-meta <- read.csv("data/pbmc_metadata.csv", stringsAsFactors = FALSE)
+# Read in metadata: batch, cell type = annotation, barcode from
+# https://doi.org/10.1093/bioinformatics/btz625 (Polanski et.al.)
+meta <- read.csv("data/polanski_metadata.csv", stringsAsFactors = FALSE)
 head(meta)
 
 # Subset metadata to batch 3'

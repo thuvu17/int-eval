@@ -43,7 +43,7 @@ unint.balanced <- FindNeighbors(unint.balanced, dims = 1:30, reduction = "pca")
 unint.balanced <- FindClusters(unint.balanced, resolution = 2, cluster.name = "unintegrated_clusters")
 
 unint.balanced <- RunUMAP(unint.balanced, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
-DimPlot(unint.balanced, reduction = "umap.unintegrated", group.by = c("batch", "celltype")) +
+DimPlot(unint.balanced, reduction = "umap.unintegrated", group.by = c("batch", "celltype", "seurat_clusters")) +
   plot_annotation("Unintegrated balanced two batch dataset")
 
 # ==============================================================================
@@ -74,6 +74,5 @@ int.balanced <- RunUMAP(int.balanced, reduction = "pca", dims = 1:30)
 int.balanced <- FindNeighbors(int.balanced, reduction = "pca", dims = 1:30)
 int.balanced <- FindClusters(int.balanced, resolution = 0.5)
 
-DimPlot(int.balanced, reduction = "umap", group.by = "batch") +
-  DimPlot(int.balanced, reduction = "umap", group.by = "celltype") +
+DimPlot(int.balanced, reduction = "umap", group.by = c("batch", "celltype", "seurat_clusters")) +
   plot_annotation("Integrated balanced two batch dataset")
