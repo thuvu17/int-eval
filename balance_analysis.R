@@ -28,12 +28,9 @@ int.balanced <- seuratv4_integrate(int.balanced.list)
 remove(int.balanced.list)
 
 # Run the standard workflow for visualization and clustering
-int.balanced <- ScaleData(int.balanced, verbose = FALSE)
-int.balanced <- RunPCA(int.balanced, npcs = 30, verbose = FALSE)
-int.balanced <- RunUMAP(int.balanced, reduction = "pca", dims = 1:30)
-int.balanced <- FindNeighbors(int.balanced, reduction = "pca", dims = 1:30)
-int.balanced <- FindClusters(int.balanced, resolution = 0.5)
+int.balanced <- seurat_visualize_clusters(int.balanced, 
+                                title = "Integrated balanced two batch dataset")
 
-DimPlot(int.balanced, reduction = "umap", 
-        group.by = c("batch", "celltype", "seurat_clusters")) +
-  plot_annotation("Integrated balanced two batch dataset")
+# Marker gene stability analysis
+marker_gene_stability(int.balanced, celltype = celltype.keep, title = "balanced",
+                      save_path = "results/marker_gene_stability")
