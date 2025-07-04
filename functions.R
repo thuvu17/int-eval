@@ -4,7 +4,7 @@ library(patchwork)
 
 
 # Perform Seurat v4 integration
-seuratv4_integrate <- function(obj.list, nfeatures = 2000, anchor.features = NULL) {
+seuratv4_integrate <- function(obj.list, nfeatures = 2000) {
   # Normalize and find variable features
   obj.list <- lapply(obj.list, function(x) {
     x <- NormalizeData(x)
@@ -23,27 +23,34 @@ seuratv4_integrate <- function(obj.list, nfeatures = 2000, anchor.features = NUL
 }
 
 # Run standard workflow for visualization and clustering
-seurat_visualize_clusters <- function(seurat_obj, dims = 1:30, highlight = NULL,
-                                      resolution = 0.5, title = "") {
+seurat_clustering <- function(seurat_obj, dims = 1:30, resolution = 0.5) {
   seurat_obj <- ScaleData(seurat_obj, verbose = FALSE)
   seurat_obj <- RunPCA(seurat_obj, npcs = max(dims), verbose = FALSE)
   seurat_obj <- RunUMAP(seurat_obj, reduction = "pca", dims = dims)
   seurat_obj <- FindNeighbors(seurat_obj, reduction = "pca", dims = dims)
   seurat_obj <- FindClusters(seurat_obj, resolution = resolution)
-  
+
+  return(seurat_obj)
+}
+
+
+# Visualize clusters
+seurat_visualize_clusters <- function(seurat_obj, highlight = NULL, 
+                                      title = "", preserve_ident = NULL) {
   p <- DimPlot(seurat_obj, reduction = "umap", 
                group.by = c("batch", "celltype", "seurat_clusters"))
   if (!is.null(highlight)) {
-    highlighted_cells <- WhichCells(seurat_obj, expression = celltype == highlight)
-    p.highlight <- DimPlot(seurat_obj, reduction = "umap", cells.highlight = highlighted_cells) +
-      ggtitle(paste("Highlight:", highlight))
+    highlighted_cells <- WhichCells(seurat_obj, 
+                                    expression = Sample == preserve_ident)
+    p.highlight <- DimPlot(seurat_obj, reduction = "umap", 
+                           cells.highlight = highlighted_cells) +
+      ggtitle("Highlight ablated")
     print(p + p.highlight + plot_annotation(title))
   } else {
     print(p + plot_annotation(title))
   }
-  
-  return(seurat_obj)
 }
+
 
 # Top 10 marker genes stability analysis
 marker_gene_stability <- function(seurat_obj, celltype, title, save_path = NULL) {
@@ -60,4 +67,32 @@ marker_gene_stability <- function(seurat_obj, celltype, title, save_path = NULL)
     saveRDS(markers, file = paste0(save_path, "/", filename, ".rds"))
     write.csv(markers, file = paste0(save_path, "/", filename, ".csv"))
   }
+}
+
+
+# Perform subset integration
+subset_integrate <- function(int_obj, perserved_obj, subset_ident, overlap_clusters) {
+  # Subset overlapping cells
+  overlap_cells <- WhichCells(int_obj, expression = Sample == subset_ident & 
+                                seurat_clusters %in% overlap_clusters)
+  # Extract counts layer and metadata
+  counts <- GetAssayData(int_obj, assay = "originalexp", slot = "counts")[, overlap_cells]
+  meta <- int_obj@meta.data[overlap_cells, ]
+  # Create new Seurat object
+  overlap_obj <- CreateSeuratObject(counts, meta.data = meta)
+  
+  # Perform integration with subset
+  subset.list <- c(perserved_obj, overlap_obj)
+  subsetint_obj <- seuratv4_integrate(subset.list)
+  subsetint_obj <- seurat_clustering(subsetint_obj)
+  
+  return(subsetint_obj)
+}
+
+
+# Extract labels and clusters for ARI
+ari_prep <- function(annotations, seurat_clusters, celltype, filename) {
+  df <- data.frame(true = annotations, predicted = seurat_clusters)
+  path <- "results/balanced_metrics/data/"
+  write.csv(df, file = paste0(path, filename, "_", celltype, ".csv"), row.names = FALSE)
 }

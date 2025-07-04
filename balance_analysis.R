@@ -32,5 +32,14 @@ int.balanced <- seurat_visualize_clusters(int.balanced,
                                 title = "Integrated balanced two batch dataset")
 
 # Marker gene stability analysis
-marker_gene_stability(int.balanced, celltype = celltype.keep, title = "balanced",
-                      save_path = "results/marker_gene_stability")
+for (celltype.keep in celltype.keep.list) {
+  marker_gene_stability(int.balanced, celltype = celltype.keep, title = "balanced",
+                        save_path = "results/marker_gene_stability/balanced")
+}
+
+# Extract labels and clusters for ARI
+int.balanced.label <- int.balanced$anno
+int.balanced.cluster <- int.balanced$seurat_clusters
+filename <- "balanced"
+ari_prep(int.balanced.label, int.balanced.cluster, celltype.keep, filename)
+remove(int.balanced.label, int.balanced.cluster, filename)
