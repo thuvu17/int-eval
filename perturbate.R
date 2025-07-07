@@ -70,8 +70,8 @@ ablated3p.chosencells <- WhichCells(ablated3p.subset, expression = Sample != "da
 ablated5p.chosencells <- WhichCells(ablated5p.subset, expression = Sample != "data_5p")
 ablated3p$pred_anno <- paste0("non ", celltype.keep)
 ablated5p$pred_anno <- paste0("non ", celltype.keep)
-ablated3p$pred_anno[ablated3p.chosencells] <- celltype.keep
-ablated5p$pred_anno[ablated5p.chosencells] <- celltype.keep
+ablated3p@meta.data[ablated3p.chosencells, "pred_anno"] <- celltype.keep
+ablated5p@meta.data[ablated5p.chosencells, "pred_anno"] <- celltype.keep
 
 Idents(ablated3p) <- "pred_anno"
 Idents(ablated5p) <- "pred_anno"

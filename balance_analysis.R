@@ -29,7 +29,7 @@ remove(int.balanced.list)
 
 # Run the standard workflow for visualization and clustering
 int.balanced <- seurat_clustering(int.balanced)
-int.balanced <- seurat_visualize_clusters(int.balanced, 
+seurat_visualize_clusters(int.balanced, 
                                 title = "Integrated balanced two batch dataset")
 
 # Marker gene stability analysis
