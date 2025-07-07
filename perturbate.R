@@ -4,7 +4,7 @@ celltype.keep.list <- list("B cell", "NK cell", "Monocyte_FCGR3A",
                            "Monocyte_CD14", "CD4 T cell", "CD8 T cell")
 
 # Remove all other cell types
-celltype.keep <- celltype.keep.list[1]
+celltype.keep <- celltype.keep.list[2]
 pbmc_3p.ablated <- subset(pbmc_3p.balanced, subset = celltype == celltype.keep)
 pbmc_5p.ablated <- subset(pbmc_5p.balanced, subset = celltype == celltype.keep)
 
@@ -30,21 +30,26 @@ seurat_visualize_clusters(seurat_obj = ablated5p,
 remove(ablated3p.list, ablated5p.list)
 
 # Marker gene stability
-marker_gene_stability(seurat_obj = int.balanced, celltype = celltype.keep, 
-                      title = "normal_v4",
+marker_cluster.3p <- "0"
+marker_cluster.5p <- "0"
+marker_gene_stability(seurat_obj = ablated3p, celltype = marker_cluster.3p, 
+                      title = "normal_v4_3p", ident = "seurat_clusters",
+                      save_path = "results/marker_gene_stability/normal_v4")
+marker_gene_stability(seurat_obj = ablated5p, celltype = marker_cluster.5p, 
+                      title = "normal_v4_5p", ident = "seurat_clusters",
                       save_path = "results/marker_gene_stability/normal_v4")
 
 # Extract labels and clusters for ARI (NOT FIXED)
-cell_selected <- WhichCells(int.balanced, expression = anno == celltype.keep)
-int.balanced.label <- int.balanced$anno[cell_selected]
-int.balanced.cluster <- int.balanced$seurat_clusters[cell_selected]
-filename <- "balanced"
-ari_prep(int.balanced.label, int.balanced.cluster, celltype.keep, filename)
+# cell_selected <- WhichCells(int.balanced, expression = anno == celltype.keep)
+# int.balanced.label <- int.balanced$anno[cell_selected]
+# int.balanced.cluster <- int.balanced$seurat_clusters[cell_selected]
+# filename <- "balanced"
+# ari_prep(int.balanced.label, int.balanced.cluster, celltype.keep, filename)
 
 # ==============================================================================
 # Subset integration
-overlapcluster.3p <- list(1, 5)
-overlapcluster.5p <-list(0, 6)
+overlapcluster.3p <- list(0, 6)
+overlapcluster.5p <-list(0, 7)
 
 ablated3p.subset <- subset_integrate(int_obj = ablated3p, 
                                      perserved_obj = pbmc_3p.ablated, 
@@ -77,8 +82,8 @@ ablated5p@meta.data[ablated5p.chosencells, "pred_anno"] <- celltype.keep
 Idents(ablated3p) <- "pred_anno"
 Idents(ablated5p) <- "pred_anno"
 marker_gene_stability(seurat_obj = ablated3p, ident = "pred_anno", 
-                      celltype = celltype.keep, title = "subset", 
+                      celltype = celltype.keep, title = "subset_3p", 
                       save_path = "results/marker_gene_stability/subset")
 marker_gene_stability(seurat_obj = ablated5p, ident = "pred_anno",
-                      celltype = celltype.keep, title = "subset", 
+                      celltype = celltype.keep, title = "subset_5p", 
                       save_path = "results/marker_gene_stability/subset")
