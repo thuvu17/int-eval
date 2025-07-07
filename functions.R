@@ -54,9 +54,9 @@ seurat_visualize_clusters <- function(seurat_obj, highlight = NULL,
 
 # Top 10 marker genes stability analysis
 marker_gene_stability <- function(seurat_obj, ident = "celltype", celltype, 
-                                  title, save_path = NULL) {
+                                  ident1, title, save_path = NULL) {
   Idents(seurat_obj) <- ident
-  markers <- FindConservedMarkers(seurat_obj, ident.1 = celltype, 
+  markers <- FindConservedMarkers(seurat_obj, ident.1 = ident1, 
                                   grouping.var = "batch", assay = "originalexp",
                                   verbose = FALSE)
   

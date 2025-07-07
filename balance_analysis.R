@@ -34,7 +34,8 @@ seurat_visualize_clusters(int.balanced,
 
 # Marker gene stability analysis
 for (celltype.keep in celltype.keep.list) {
-  marker_gene_stability(int.balanced, celltype = celltype.keep, title = "balanced",
+  marker_gene_stability(int.balanced, celltype = celltype.keep, 
+                        title = "balanced", ident1 = celltype.keep,
                         save_path = "results/marker_gene_stability/balanced")
 }
 
