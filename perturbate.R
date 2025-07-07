@@ -1,7 +1,7 @@
 # Perform perturbation by ablation of all cell types except one
 
-celltype.keep.list <- list("Monocyte_CD14", "NK cell", "Monocyte_FCGR3A", 
-                           "B cell", "CD4 T cell", "CD8 T cell")
+celltype.keep.list <- list("B cell", "NK cell", "Monocyte_FCGR3A", 
+                           "Monocyte_CD14", "CD4 T cell", "CD8 T cell")
 
 # Remove all other cell types
 celltype.keep <- celltype.keep.list[1]
@@ -43,8 +43,8 @@ ari_prep(int.balanced.label, int.balanced.cluster, celltype.keep, filename)
 
 # ==============================================================================
 # Subset integration
-overlapcluster.3p <- list(0, 2, 6)
-overlapcluster.5p <-list(0, 1, 6)
+overlapcluster.3p <- list(1, 5)
+overlapcluster.5p <-list(0, 6)
 
 ablated3p.subset <- subset_integrate(int_obj = ablated3p, 
                                      perserved_obj = pbmc_3p.ablated, 
@@ -55,8 +55,8 @@ ablated5p.subset <- subset_integrate(int_obj = ablated5p,
                                      subset_ident = "data_3p", 
                                      overlap_clusters = overlapcluster.5p)
 # Cluster  + visualization
-ablated3p.subset <- seurat_clustering(seurat_obj = abalted3p.subset, resolution = 1.2)
-ablated5p.subset <- seurat_clustering(seurat_obj = abalted5p.subset, resolution = 1.2)
+ablated3p.subset <- seurat_clustering(seurat_obj = ablated3p.subset, resolution = 1.2)
+ablated5p.subset <- seurat_clustering(seurat_obj = ablated5p.subset, resolution = 1.2)
 seurat_visualize_clusters(seurat_obj = ablated3p.subset, 
                           highlight = celltype.keep, 
                           preserve_ident = "data_3p",
@@ -65,6 +65,20 @@ seurat_visualize_clusters(seurat_obj = ablated5p.subset,
                           highlight = celltype.keep, 
                           preserve_ident = "data_5p",
                 title = paste0(celltype.keep, " ablated 5p subset integration"))
+# Get subset labels
+ablated3p.chosencells <- WhichCells(ablated3p.subset, expression = Sample != "data_3p")
+ablated5p.chosencells <- WhichCells(ablated5p.subset, expression = Sample != "data_5p")
+ablated3p$pred_anno <- paste0("non ", celltype.keep)
+ablated5p$pred_anno <- paste0("non ", celltype.keep)
+ablated3p$pred_anno[ablated3p.chosencells] <- celltype.keep
+ablated5p$pred_anno[ablated5p.chosencells] <- celltype.keep
+
+Idents(ablated3p) <- "pred_anno"
+Idents(ablated5p) <- "pred_anno"
+markers_subset.3p <- FindMarkers(ablated3p, ident.1 = celltype.keep, 
+                                 ident.2 = paste0("non ", celltype.keep))
+markers_subset.5p <- FindMarkers(ablated5p, ident.1 = celltype.keep, 
+                                 ident.2 = paste0("non ", celltype.keep))
 
 # Marker gene stability (CANNOT USE FINDMARKERS)
 marker_gene_stability(seurat_obj = ablated3p.subset, celltype = celltype.keep, 
