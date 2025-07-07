@@ -73,17 +73,12 @@ ablated5p$pred_anno <- paste0("non ", celltype.keep)
 ablated3p@meta.data[ablated3p.chosencells, "pred_anno"] <- celltype.keep
 ablated5p@meta.data[ablated5p.chosencells, "pred_anno"] <- celltype.keep
 
+# Marker gene stability
 Idents(ablated3p) <- "pred_anno"
 Idents(ablated5p) <- "pred_anno"
-markers_subset.3p <- FindMarkers(ablated3p, ident.1 = celltype.keep, 
-                                 ident.2 = paste0("non ", celltype.keep))
-markers_subset.5p <- FindMarkers(ablated5p, ident.1 = celltype.keep, 
-                                 ident.2 = paste0("non ", celltype.keep))
-
-# Marker gene stability
-marker_gene_stability(seurat_obj = ablated3p.subset, ident = "pred_anno", 
+marker_gene_stability(seurat_obj = ablated3p, ident = "pred_anno", 
                       celltype = celltype.keep, title = "subset", 
                       save_path = "results/marker_gene_stability/subset")
-marker_gene_stability(seurat_obj = ablated5p.subset, ident = "pred_anno",
+marker_gene_stability(seurat_obj = ablated5p, ident = "pred_anno",
                       celltype = celltype.keep, title = "subset", 
                       save_path = "results/marker_gene_stability/subset")
