@@ -80,8 +80,10 @@ markers_subset.3p <- FindMarkers(ablated3p, ident.1 = celltype.keep,
 markers_subset.5p <- FindMarkers(ablated5p, ident.1 = celltype.keep, 
                                  ident.2 = paste0("non ", celltype.keep))
 
-# Marker gene stability (CANNOT USE FINDMARKERS)
-marker_gene_stability(seurat_obj = ablated3p.subset, celltype = celltype.keep, 
-                      title = "subset", save_path = "results/marker_gene_stability/subset")
-marker_gene_stability(seurat_obj = ablated5p.subset, celltype = celltype.keep, 
-                      title = "subset", save_path = "results/marker_gene_stability/subset")
+# Marker gene stability
+marker_gene_stability(seurat_obj = ablated3p.subset, ident = "pred_anno", 
+                      celltype = celltype.keep, title = "subset", 
+                      save_path = "results/marker_gene_stability/subset")
+marker_gene_stability(seurat_obj = ablated5p.subset, ident = "pred_anno",
+                      celltype = celltype.keep, title = "subset", 
+                      save_path = "results/marker_gene_stability/subset")
