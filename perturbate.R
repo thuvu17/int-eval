@@ -13,7 +13,7 @@ canonical_markers_list <- list(
 )
 
 # Remove all other cell types
-celltype.keep <- celltype.keep.list[[3]]
+celltype.keep <- celltype.keep.list[[5]]
 pbmc_3p.ablated <- subset(pbmc_3p.balanced, subset = celltype == celltype.keep)
 pbmc_5p.ablated <- subset(pbmc_5p.balanced, subset = celltype == celltype.keep)
 
@@ -26,7 +26,7 @@ canonical_markers <- canonical_markers_list[[celltype.keep]]
 cluster_analysis(ablated3p, ablated5p, canonical_markers)
 
 # Marker gene stability
-marker_cluster.3p <- c("1", "5")
+marker_cluster.3p <- c("0")
 marker_cluster.5p <- c("0")
 marker_gene_stability(seurat_obj = ablated3p, ident1 = marker_cluster.3p, 
                       title = "normal_v4_3p", ident = "seurat_clusters",
@@ -46,16 +46,16 @@ marker_gene_stability(seurat_obj = ablated5p, ident1 = marker_cluster.5p,
 
 # ==============================================================================
 # Subset integration
-overlapcluster.3p <- list(1, 5)
-overlapcluster.5p <-list(0, 1)
+overlapcluster.3p <- list(0, 2, 6)
+overlapcluster.5p <-list(0, 6)
 source("~/int-eval/perturbate_subset.R")
 
 # Marker gene stability
 cluster_analysis(ablated3p.subset, ablated5p.subset, canonical_markers,
                  method = "subset integration")
 # Get subset labels
-ablated3p.chosencells <- WhichCells(ablated3p.subset)
-ablated5p.chosencells <- WhichCells(ablated5p.subset, expression = seurat_clusters != 1)
+ablated3p.chosencells <- WhichCells(ablated3p.subset, expression = seurat_clusters %in% c(0, 2, 5))
+ablated5p.chosencells <- WhichCells(ablated5p.subset)
 ablated3p$pred_anno <- paste0("non ", celltype.keep)
 ablated5p$pred_anno <- paste0("non ", celltype.keep)
 ablated3p@meta.data[ablated3p.chosencells, "pred_anno"] <- celltype.keep
