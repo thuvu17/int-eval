@@ -46,8 +46,12 @@ marker_gene_stability(seurat_obj = ablated5p, ident1 = marker_cluster.5p,
 
 # ==============================================================================
 # Subset integration
+overlapcluster.3p <- list(1, 5)
+overlapcluster.5p <-list(0, 6)
 source("~/int-eval/perturbate_subset.R")
 
+# Marker gene stability
+cluster_analysis(ablated3p.subset, ablated5p.subset, canonical_markers)
 # Get subset labels
 ablated3p.chosencells <- WhichCells(ablated3p.subset, expression = Sample != "data_3p")
 ablated5p.chosencells <- WhichCells(ablated5p.subset, expression = Sample != "data_5p")
@@ -56,7 +60,7 @@ ablated5p$pred_anno <- paste0("non ", celltype.keep)
 ablated3p@meta.data[ablated3p.chosencells, "pred_anno"] <- celltype.keep
 ablated5p@meta.data[ablated5p.chosencells, "pred_anno"] <- celltype.keep
 
-# Marker gene stability
+# Save results
 Idents(ablated3p) <- "pred_anno"
 Idents(ablated5p) <- "pred_anno"
 marker_gene_stability(seurat_obj = ablated3p, ident = "pred_anno",

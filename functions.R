@@ -54,6 +54,8 @@ seurat_visualize_clusters <- function(seurat_obj, highlight = NULL,
 
 # Cluster analysis
 cluster_analysis <- function(seurat_obj.3p, seurat_obj.5p, markers) {
+  DefaultAssay(seurat_obj.3p) <- "originalexp"
+  DefaultAssay(seurat_obj.5p) <- "originalexp"
   # Print plots for 3p
   featureplot.3p <- FeaturePlot(seurat_obj.3p, features = markers)
   clusterplot.3p <- DimPlot(seurat_obj.3p, reduction = "umap", group.by = c("seurat_clusters"))
