@@ -52,6 +52,21 @@ seurat_visualize_clusters <- function(seurat_obj, highlight = NULL,
 }
 
 
+# Cluster analysis
+cluster_analysis <- function(seurat_obj.3p, seurat_obj.5p, markers) {
+  # Print plots for 3p
+  featureplot.3p <- FeaturePlot(seurat_obj.3p, features = markers)
+  clusterplot.3p <- DimPlot(seurat_obj.3p, reduction = "umap", group.by = c("seurat_clusters"))
+  title.3p <- paste0(celltype.keep, " ablated 3p normal integration")
+  print(featureplot.3p + clusterplot.3p + plot_annotation(title.3p))
+  # Print plots for 5p
+  featureplot.5p <- FeaturePlot(seurat_obj.5p, features = markers)
+  clusterplot.5p <- DimPlot(seurat_obj.5p, reduction = "umap", group.by = c("seurat_clusters"))
+  title.5p <- paste0(celltype.keep, " ablated 5p normal integration")
+  print(featureplot.5p + clusterplot.5p + plot_annotation(title.5p))
+}
+
+
 # Top 10 marker genes stability analysis
 marker_gene_stability <- function(seurat_obj, ident = "celltype", celltype, 
                                   ident1, title, save_path = NULL) {
