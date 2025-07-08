@@ -53,8 +53,8 @@ source("~/int-eval/perturbate_subset.R")
 # Marker gene stability
 cluster_analysis(ablated3p.subset, ablated5p.subset, canonical_markers)
 # Get subset labels
-ablated3p.chosencells <- WhichCells(ablated3p.subset, expression = Sample != "data_3p")
-ablated5p.chosencells <- WhichCells(ablated5p.subset, expression = Sample != "data_5p")
+ablated3p.chosencells <- WhichCells(ablated3p.subset)
+ablated5p.chosencells <- WhichCells(ablated5p.subset)
 ablated3p$pred_anno <- paste0("non ", celltype.keep)
 ablated5p$pred_anno <- paste0("non ", celltype.keep)
 ablated3p@meta.data[ablated3p.chosencells, "pred_anno"] <- celltype.keep
