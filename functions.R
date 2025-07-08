@@ -112,7 +112,7 @@ subset_integrate <- function(int_obj, perserved_obj, subset_ident, overlap_clust
 get_rankings <- function(filepath, top_genes) {
   df <- read.csv(filepath, row.names = 1)
   # Rank by minimum p-value (smaller p → higher rank)
-  df$rank <- rank(df$minimump_p_val, ties.method = "average")
+  df$rank <- rank(df$p_val, ties.method = "average")
   # Initialize named vector of NA for all top_genes
   ranks <- setNames(rep(NA, length(top_genes)), top_genes)
   # Fill in only genes that are actually present in the data
@@ -120,6 +120,56 @@ get_rankings <- function(filepath, top_genes) {
   ranks[present_genes] <- df[present_genes, "rank"]
   
   return(ranks)
+}
+
+
+# Compare marker gene rankings
+compare_rankings <- function(celltype, top_genes,
+                             v4_3p.rankings, v4_5p.rankings,
+                             subset_3p.rankings, subset_5p.rankings) {
+  # Construct dataframe
+  rank_comparison <- data.frame(
+    gene = top_genes,
+    balanced_rank = 1:10,
+    v4_3p = v4_3p.rankings[top_genes],
+    v4_5p = v4_5p.rankings[top_genes],
+    subset_3p = subset_3p.rankings[top_genes],
+    subset_5p = subset_5p.rankings[top_genes]
+  )
+  # Compute Spearman correlations
+  spearman_corr <- c(
+    cor(rank_comparison$balanced_rank, rank_comparison$v4_3p, method = "spearman"),
+    cor(rank_comparison$balanced_rank, rank_comparison$v4_5p, method = "spearman"),
+    cor(rank_comparison$balanced_rank, rank_comparison$subset_3p, method = "spearman"),
+    cor(rank_comparison$balanced_rank, rank_comparison$subset_5p, method = "spearman")
+  )
+  # Compute average absolute rank differences
+  avg_rank_diff <- c(
+    mean(abs(rank_comparison$balanced_rank - rank_comparison$v4_3p)),
+    mean(abs(rank_comparison$balanced_rank - rank_comparison$v4_5p)),
+    mean(abs(rank_comparison$balanced_rank - rank_comparison$subset_3p)),
+    mean(abs(rank_comparison$balanced_rank - rank_comparison$subset_5p))
+  )
+  
+  # Append to dataframe
+  metrics_df <- data.frame(
+    metric = c("spearman", "avg_rank_diff"),
+    v4_3p = c(spearman_corr[1], avg_rank_diff[1]),
+    v4_5p = c(spearman_corr[2], avg_rank_diff[2]),
+    subset_3p = c(spearman_corr[3], avg_rank_diff[3]),
+    subset_5p = c(spearman_corr[4], avg_rank_diff[4])
+  )
+  
+  # Save to CSV
+  save_path <- "results/marker_gene_stability"
+  compare_name <- paste0(celltype, "_compare")
+  metric_name <- paste0(celltype, "_metric")
+  write.csv(rank_comparison, 
+            file = file.path(save_path, paste0(compare_name, ".csv")), row.names = FALSE)
+  write.csv(metrics_df, 
+            file = file.path(save_path, paste0(metric_name, ".csv")), row.names = FALSE)
+  
+  return(list(s = rank_comparison, metrics = metrics_df))
 }
 
 

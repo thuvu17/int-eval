@@ -5,7 +5,7 @@
 commonpath <- "results/marker_gene_stability"
 filepath <- paste0(commonpath, "/balanced/", celltype.keep, "_balanced", ".csv")
 balanced_df <- read.csv(filepath, row.names = 1)
-balanced_df$rank <- rank(balanced_df$minimump_p_val, ties.method = "average")
+balanced_df$rank <- rank(balanced_df$p_val, ties.method = "average")
 balanced_df_sorted <- balanced_df[order(balanced_df$rank), ]
 balanced_df_top10 <- rownames(balanced_df_sorted)[1:10]
 
@@ -23,11 +23,8 @@ subset_5p.rankings <- get_rankings(filepath, balanced_df_top10)
 remove(filepath)
 
 # Compare rankings between balanced and perturbed
-rank_comparison <- data.frame(
-  gene = balanced_df_top10,
-  balanced_rank = 1:10,
-  v4_3p = v4_3p.rankings[balanced_df_top10],
-  v4_5p = v4_5p.rankings[balanced_df_top10],
-  subset_3p = subset_3p.rankings[balanced_df_top10],
-  subset_5p = subset_5p.rankings[balanced_df_top10]
-)
+marker_analysis_results <- compare_rankings(celltype.keep, balanced_df_top10,
+                                            v4_3p.rankings, v4_5p.rankings, 
+                                            subset_3p.rankings, subset_5p.rankings)
+marker_analysis_results[["rank_comparison"]]
+marker_analysis_results[["metrics"]]
