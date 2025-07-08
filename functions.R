@@ -1,6 +1,7 @@
 library(Seurat)
 library(ggplot2)
 library(patchwork)
+library(dplyr)
 
 
 # Perform Seurat v4 integration
@@ -73,9 +74,8 @@ cluster_analysis <- function(seurat_obj.3p, seurat_obj.5p, markers) {
 marker_gene_stability <- function(seurat_obj, ident = "celltype", celltype, 
                                   ident1, title, save_path = NULL) {
   Idents(seurat_obj) <- ident
-  markers <- FindConservedMarkers(seurat_obj, ident.1 = ident1, 
-                                  grouping.var = "batch", assay = "originalexp",
-                                  verbose = FALSE)
+  markers <- FindMarkers(seurat_obj, ident.1 = ident1, assay = "originalexp",
+                         verbose = FALSE)
   
   cat(paste0(celltype, " top 10 marker genes (", title, "):\n"))
   print(head(markers, 10))
@@ -105,6 +105,21 @@ subset_integrate <- function(int_obj, perserved_obj, subset_ident, overlap_clust
   subsetint_obj <- seurat_clustering(subsetint_obj)
   
   return(subsetint_obj)
+}
+
+
+# Load marker rankings
+get_rankings <- function(filepath, top_genes) {
+  df <- read.csv(filepath, row.names = 1)
+  # Rank by minimum p-value (smaller p → higher rank)
+  df$rank <- rank(df$minimump_p_val, ties.method = "average")
+  # Initialize named vector of NA for all top_genes
+  ranks <- setNames(rep(NA, length(top_genes)), top_genes)
+  # Fill in only genes that are actually present in the data
+  present_genes <- intersect(top_genes, rownames(df))
+  ranks[present_genes] <- df[present_genes, "rank"]
+  
+  return(ranks)
 }
 
 
