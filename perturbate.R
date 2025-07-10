@@ -13,7 +13,7 @@ canonical_markers_list <- list(
 )
 
 # Remove all other cell types
-celltype.keep <- celltype.keep.list[[6]]
+celltype.keep <- celltype.keep.list[[3]]
 pbmc_3p.ablated <- subset(pbmc_3p.balanced, subset = celltype == celltype.keep)
 pbmc_5p.ablated <- subset(pbmc_5p.balanced, subset = celltype == celltype.keep)
 
@@ -24,6 +24,36 @@ source("~/int-eval/perturbate_v4.R")
 # Cluster analysis to identify cluster corresponding to celltype.keep
 canonical_markers <- canonical_markers_list[[celltype.keep]]
 cluster_analysis(ablated3p, ablated5p, canonical_markers)
+
+# Assign predicted labels by cluster + DEG analysis
+pred_clusters.3p <- c(1)
+pred_clusters.5p <- c(0)
+pred_cells.3p <- WhichCells(ablated3p, expression = seurat_clusters %in% pred_clusters.3p)
+pred_cells.5p <- WhichCells(ablated5p, expression = seurat_clusters %in% pred_clusters.5p)
+ablated3p$v4_deg_pred <- paste0("non ", celltype.keep)
+ablated5p$v4_deg_pred <- paste0("non ", celltype.keep)
+ablated3p@meta.data[pred_cells.3p, "v4_deg_pred"] <- celltype.keep
+ablated5p@meta.data[pred_cells.5p, "v4_deg_pred"] <- celltype.keep
+
+confusion_matrix(ablated3p, pred_meta = "v4_deg_pred", celltype = celltype.keep,
+                 dataset = "Ablated 3p normal Seurat v4")
+confusion_matrix(ablated5p, pred_meta = "v4_deg_pred", celltype = celltype.keep,
+                 dataset = "Ablated 5p normal Seurat v4")
+
+# Assign predicted labels by overlapping with true labels
+pred_clusters.3p <- c(1, 5)
+pred_clusters.5p <- c(0)
+pred_cells.3p <- WhichCells(ablated3p, expression = seurat_clusters %in% pred_clusters.3p)
+pred_cells.5p <- WhichCells(ablated5p, expression = seurat_clusters %in% pred_clusters.5p)
+ablated3p$v4_overlap_pred <- paste0("non ", celltype.keep)
+ablated5p$v4_overlap_pred <- paste0("non ", celltype.keep)
+ablated3p@meta.data[pred_cells.3p, "v4_overlap_pred"] <- celltype.keep
+ablated5p@meta.data[pred_cells.5p, "v4_overlap_pred"] <- celltype.keep
+
+confusion_matrix(ablated3p, pred_meta = "v4_overlap_pred", celltype = celltype.keep,
+                 dataset = "Ablated 3p normal Seurat v4 + overlap")
+confusion_matrix(ablated5p, pred_meta = "v4_overlap_pred", celltype = celltype.keep,
+                 dataset = "Ablated 5p normal Seurat v4 + overlap")
 
 # Marker gene stability
 marker_cluster.3p <- c("1", "5")
@@ -46,20 +76,25 @@ marker_gene_stability(seurat_obj = ablated5p, ident1 = marker_cluster.5p,
 
 # ==============================================================================
 # Subset integration
-overlapcluster.3p <- list(0, 1, 3)
-overlapcluster.5p <-list(0, 1)
+overlapcluster.3p <- list(1, 5)
+overlapcluster.5p <-list(0, 2, 3, 4)
 source("~/int-eval/perturbate_subset.R")
 
 # Marker gene stability
 cluster_analysis(ablated3p.subset, ablated5p.subset, canonical_markers,
                  method = "subset integration")
 # Get subset labels
-ablated3p.chosencells <- WhichCells(ablated3p.subset, expression = seurat_clusters %in% c(0, 3))
-ablated5p.chosencells <- WhichCells(ablated5p.subset, expression = seurat_clusters %in% c(0, 4))
-ablated3p$pred_anno <- paste0("non ", celltype.keep)
-ablated5p$pred_anno <- paste0("non ", celltype.keep)
-ablated3p@meta.data[ablated3p.chosencells, "pred_anno"] <- celltype.keep
-ablated5p@meta.data[ablated5p.chosencells, "pred_anno"] <- celltype.keep
+pred_cells.3p <- WhichCells(ablated3p.subset)
+pred_cells.5p <- WhichCells(ablated5p.subset)
+ablated3p$subset_pred <- paste0("non ", celltype.keep)
+ablated5p$subset_pred <- paste0("non ", celltype.keep)
+ablated3p@meta.data[pred_cells.3p, "subset_pred"] <- celltype.keep
+ablated5p@meta.data[pred_cells.5p, "subset_pred"] <- celltype.keep
+
+confusion_matrix(ablated3p, pred_meta = "subset_pred", celltype = celltype.keep,
+                 dataset = "Ablated 3p subset integration")
+confusion_matrix(ablated5p, pred_meta = "subset_pred", celltype = celltype.keep,
+                 dataset = "Ablated 5p subset integration")
 
 # Save results
 Idents(ablated3p) <- "pred_anno"

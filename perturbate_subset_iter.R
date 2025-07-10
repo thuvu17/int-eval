@@ -1,9 +1,9 @@
-# Subset integration on perturbed dataset (run this after perturbate_v4)
-ablated3p.subset <- subset_integrate(int_obj = ablated3p, 
+# Subset integration on perturbed dataset (iteratively)
+ablated3p.subset <- subset_integrate(int_obj = ablated3p.subset, 
                                      perserved_obj = pbmc_3p.ablated, 
                                      subset_ident = "data_5p", 
                                      overlap_clusters = overlapcluster.3p)
-ablated5p.subset <- subset_integrate(int_obj = ablated5p, 
+ablated5p.subset <- subset_integrate(int_obj = ablated5p.subset, 
                                      perserved_obj = pbmc_5p.ablated, 
                                      subset_ident = "data_3p", 
                                      overlap_clusters = overlapcluster.5p)

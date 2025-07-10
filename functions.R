@@ -53,11 +53,25 @@ seurat_visualize_clusters <- function(seurat_obj, highlight = NULL,
 }
 
 
+# DEG analysis: Get top 10 marker genes by p-val and log2fc
+deg_analysis <- function(seurat_obj) {
+  DefaultAssay(seurat_obj) <- "originalexp"
+  markers <- FindAllMarkers(seurat_obj, only.pos = TRUE)
+  top10.markers <- markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>%
+    dplyr::filter(p_val_adj < 0.05) %>%
+    slice_min(order_by = p_val_adj, n = 10, with_ties = FALSE)
+  
+  return(top10.markers)
+}
+
+
 # Cluster analysis
 cluster_analysis <- function(seurat_obj.3p, seurat_obj.5p, markers,
                              method = "normal integration") {
   DefaultAssay(seurat_obj.3p) <- "originalexp"
-  DefaultAssay(seurat_obj.5p) <- "originalexp3"
+  DefaultAssay(seurat_obj.5p) <- "originalexp"
   # Print plots for 3p
   featureplot.3p <- FeaturePlot(seurat_obj.3p, features = markers)
   clusterplot.3p <- DimPlot(seurat_obj.3p, reduction = "umap", group.by = c("seurat_clusters"))
@@ -68,6 +82,22 @@ cluster_analysis <- function(seurat_obj.3p, seurat_obj.5p, markers,
   clusterplot.5p <- DimPlot(seurat_obj.5p, reduction = "umap", group.by = c("seurat_clusters"))
   title.5p <- paste0(celltype.keep, " ablated 5p ", method)
   print(featureplot.5p + clusterplot.5p + plot_annotation(title.5p))
+  # DEG analysis
+  results.3p <- deg_analysis(seurat_obj.3p)
+  results.5p <- deg_analysis(seurat_obj.5p)
+  # Print top DEGs for 3p
+  cat("\n===== Top 10 DEGs for", celltype.keep, "in 3p =====\n")
+  for (clust in unique(results.3p$cluster)) {
+    cat("\nCluster", clust, ":\n")
+    print(results.3p %>% dplyr::filter(cluster == clust))
+  }
+  
+  # Print top DEGs for 5p
+  cat("\n===== Top 10 DEGs for", celltype.keep, "in 5p =====\n")
+  for (clust in unique(results.5p$cluster)) {
+    cat("\nCluster", clust, ":\n")
+    print(results.5p %>% dplyr::filter(cluster == clust))
+  }
 }
 
 
@@ -78,13 +108,27 @@ marker_gene_stability <- function(seurat_obj, ident = "celltype", celltype,
   markers <- FindMarkers(seurat_obj, ident.1 = ident1, assay = "originalexp",
                          verbose = FALSE)
   
-  cat(paste0(celltype, " top 10 marker genes (", title, "):\n"))
-  print(head(markers, 10))
+  # Top 10 markers by smallest p values
+  top10.minpval <- markers %>%
+    filter(avg_log2FC > 1) %>%
+    slice_min(order_by = p_val_adj, n = 10, with_ties = FALSE)
+  # Top 10 markers by log fold change
+  top10.logfc <- markers %>%
+    filter(avg_log2FC > 1) %>%
+    slice_max(order_by = avg_log2FC, n = 10, with_ties = FALSE)
   
+  # Print to console
+  cat(paste0("\n", celltype, " top 10 marker genes by adj. p-value (", title, "):\n"))
+  print(top10.minpval)
+  cat(paste0("\n", celltype, " top 10 marker genes by log2FC (", title, "):\n"))
+  print(top10.logfc)
+  
+  # Save data
   if (!is.null(save_path)) {
     filename <- paste0(celltype, "_", title)
     saveRDS(markers, file = paste0(save_path, "/", filename, ".rds"))
-    write.csv(markers, file = paste0(save_path, "/", filename, ".csv"))
+    write.csv(top10.minpval, file = paste0(filename, "_top10_minpval.csv"))
+    write.csv(top10.logfc, file = paste0(filename, "_top10_logfc.csv"))
   }
 }
 
@@ -179,4 +223,32 @@ ari_prep <- function(annotations, seurat_clusters, celltype, filename) {
   df <- data.frame(true = annotations, predicted = seurat_clusters)
   path <- "results/balanced_metrics/data/"
   write.csv(df, file = paste0(path, filename, "_", celltype, ".csv"), row.names = FALSE)
+}
+
+
+# Get confusion matrix
+confusion_matrix <- function(seurat_obj, pred_meta, true_meta = "anno", 
+                             celltype, dataset) {
+  pred <- seurat_obj[[pred_meta]][, 1]
+  true <- seurat_obj[[true_meta]][, 1]
+  
+  tp <- sum(pred == celltype & true == celltype)
+  tn <- sum(pred != celltype & true != celltype)
+  fp <- sum(pred == celltype & true != celltype)
+  fn <- sum(pred != celltype & true == celltype)
+  
+  accuracy <- (tp + tn) / (tp + tn + fp + fn)
+  precision <- if ((tp + fp) == 0) NA else tp / (tp + fp)
+  recall <- if ((tp + fn) == 0) NA else tp / (tp + fn)
+  f1 <- if ((2 * tp + fp + fn) == 0) NA else (2 * tp) / (2 * tp + fp + fn)
+  
+  cat(paste0("==== ", dataset, ": ", celltype,  " ====\n"))
+  cat("TP:", tp, "\n")
+  cat("TN:", tn, "\n")
+  cat("FP:", fp, "\n")
+  cat("FN:", fn, "\n")
+  cat("Accuracy:", round(accuracy, 4), "\n")
+  cat("Precision:", round(precision, 4), "\n")
+  cat("Recall:", round(recall, 4), "\n")
+  cat("F1:", round(f1, 4), "\n")
 }
