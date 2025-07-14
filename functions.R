@@ -1,4 +1,5 @@
 library(Seurat)
+library(SeuratWrappers)
 library(ggplot2)
 library(patchwork)
 library(dplyr)
@@ -23,12 +24,51 @@ seuratv4_integrate <- function(obj.list, nfeatures = 2000) {
   return(integrated)
 }
 
+
+# Perform Seurat v5 integration (Harmony or scVI)
+seuratv5_integrate <- function(obj, method) {
+  # Normalize and find variable features
+  obj[["originalexp"]] <- split(obj[["originalexp"]], f = obj$Sample)
+  obj <- NormalizeData(obj)
+  obj <- FindVariableFeatures(obj)
+  obj <- ScaleData(obj)
+  obj <- RunPCA(obj)
+  
+  obj <- FindNeighbors(obj, dims = 1:30, reduction = "pca")
+  obj <- FindClusters(obj, resolution = 2, cluster.name = "unintegrated_clusters")
+  obj <- RunUMAP(obj, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+  
+  if (method == "harmony") {
+    obj <- IntegrateLayers(
+      object = obj, method = HarmonyIntegration,
+      orig.reduction = "pca", new.reduction = "harmony",
+      verbose = FALSE
+    )
+    obj <- FindNeighbors(obj, reduction = "harmony", dims = 1:30)
+    obj <- FindClusters(obj, resolution = 2, cluster.name = "harmony_clusters")
+    obj <- RunUMAP(obj, reduction = "harmony", dims = 1:30, reduction.name = "umap.harmony")
+  } 
+  else if (method == "scvi") {
+      obj <- IntegrateLayers(
+        object = obj, method = scVIIntegration,
+        new.reduction = "integrated.scvi",
+        conda_env = "C:/Users/vnmt1/miniconda3/envs/scvi-env", verbose = FALSE
+      )
+      obj <- FindNeighbors(obj, reduction = "integrated.scvi", dims = 1:30)
+      obj <- FindClusters(obj, resolution = 2, cluster.name = "scvi_clusters")
+      obj <- RunUMAP(obj, reduction = "integrated.scvi", dims = 1:30, reduction.name = "umap.cca")
+  }
+  
+  return(obj)
+}
+
+
 # Run standard workflow for visualization and clustering
-seurat_clustering <- function(seurat_obj, dims = 1:30, resolution = 1.0) {
+seurat_clustering <- function(seurat_obj, dims = 1:30, resolution = 1.0, reduction = "pca") {
   seurat_obj <- ScaleData(seurat_obj, verbose = FALSE)
   seurat_obj <- RunPCA(seurat_obj, npcs = max(dims), verbose = FALSE)
-  seurat_obj <- RunUMAP(seurat_obj, reduction = "pca", dims = dims)
-  seurat_obj <- FindNeighbors(seurat_obj, reduction = "pca", dims = dims)
+  seurat_obj <- RunUMAP(seurat_obj, reduction = reduction, dims = dims)
+  seurat_obj <- FindNeighbors(seurat_obj, reduction = reduction, dims = dims)
   seurat_obj <- FindClusters(seurat_obj, resolution = resolution)
 
   return(seurat_obj)
@@ -53,23 +93,23 @@ seurat_visualize_clusters <- function(seurat_obj, highlight = NULL,
 }
 
 
-# DEG analysis: Get top 10 marker genes by p-val and log2fc
-deg_analysis <- function(seurat_obj) {
+# DEG analysis: Get top 20 marker genes by p-val and log2fc
+deg_analysis <- function(seurat_obj, n = 20) {
   DefaultAssay(seurat_obj) <- "originalexp"
   markers <- FindAllMarkers(seurat_obj, only.pos = TRUE)
-  top10.markers <- markers %>%
+  top20.markers <- markers %>%
     group_by(cluster) %>%
     dplyr::filter(avg_log2FC > 1) %>%
     dplyr::filter(p_val_adj < 0.05) %>%
-    slice_min(order_by = p_val_adj, n = 10, with_ties = FALSE)
+    slice_min(order_by = p_val_adj, n = n, with_ties = FALSE)
   
-  return(top10.markers)
+  return(top20.markers)
 }
 
 
 # Cluster analysis
 cluster_analysis <- function(seurat_obj.3p, seurat_obj.5p, markers,
-                             method = "normal integration") {
+                             method = "normal integration", top_n = 20) {
   # DefaultAssay(seurat_obj.3p) <- "originalexp"
   # DefaultAssay(seurat_obj.5p) <- "originalexp"
   # Print plots for 3p
@@ -83,21 +123,36 @@ cluster_analysis <- function(seurat_obj.3p, seurat_obj.5p, markers,
   # title.5p <- paste0(celltype.keep, " ablated 5p ", method)
   # print(featureplot.5p + clusterplot.5p + plot_annotation(title.5p))
   # DEG analysis
-  results.3p <- deg_analysis(seurat_obj.3p)
-  results.5p <- deg_analysis(seurat_obj.5p)
+  results.3p <- deg_analysis(seurat_obj.3p, top_n)
+  results.5p <- deg_analysis(seurat_obj.5p, top_n)
+  
+  valid_clusters_3p <- c()
+  valid_clusters_5p <- c()
+  
   # Print top DEGs for 3p
-  cat("\n===== Top 10 DEGs for", celltype.keep, "in 3p =====\n")
+  cat("\n===== Top 20 DEGs for", celltype.keep, "in 3p =====\n")
   for (clust in unique(results.3p$cluster)) {
     cat("\nCluster", clust, ":\n")
-    print(results.3p %>% dplyr::filter(cluster == clust))
+    top_genes <- results.3p %>% dplyr::filter(cluster == clust)
+    print(top_genes)
+    if (all(markers %in% top_genes$gene)) {
+      valid_clusters_3p <- c(valid_clusters_3p, clust)
+      print("Cluster chosen")
+    }
   }
-  
   # Print top DEGs for 5p
-  cat("\n===== Top 10 DEGs for", celltype.keep, "in 5p =====\n")
+  cat("\n===== Top 20 DEGs for", celltype.keep, "in 5p =====\n")
   for (clust in unique(results.5p$cluster)) {
     cat("\nCluster", clust, ":\n")
-    print(results.5p %>% dplyr::filter(cluster == clust))
+    top_genes <- results.5p %>% dplyr::filter(cluster == clust)
+    print(top_genes)
+    if (all(markers %in% top_genes$gene)) {
+      valid_clusters_5p <- c(valid_clusters_5p, clust)
+      print("Cluster chosen")
+    }
   }
+  
+  return(list(clusters.3p = valid_clusters_3p, clusters.5p = valid_clusters_5p))
 }
 
 
